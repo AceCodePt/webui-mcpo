@@ -1,0 +1,43 @@
+version: "3"
+
+services:
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    ports:
+      - "3000:8080"
+    volumes:
+      - open-webui:/app/backend/data
+    networks:
+      - webui-network
+    depends_on:
+      - mcpo
+    restart: unless-stopped
+
+  mcpo:
+    image: ghcr.io/open-webui/mcpo:main
+    container_name: mcpo
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config.json:/config.json:ro # Mount as read-only (:ro) if mcpo doesn't need to write to it
+    env_file:
+      - .env
+    environment:
+      - MCPO_API_KEY=${MCPO_API_KEY_FROM_ENV}
+    command:
+      ["--api-key", "$MCPO_API_KEY", "--config", "/config.json", "--", "run"]
+    networks:
+      - webui-network
+    # --- For Linux Users (When trying to get into local host)
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+    # ---
+    restart: unless-stopped
+
+volumes:
+  open-webui:
+
+networks:
+  webui-network:
+    driver: bridge
